@@ -6,6 +6,8 @@
 #include "util.h"
 #include "util.cpp"
 
+
+
 class Ball {
 private:
     float x, y;
@@ -205,83 +207,116 @@ private:
     int speed;
 };
 
-using BrickLayer = std::vector<Bricks>;
 
-using BrickLevels = std::vector<BrickLayer>;
 
-Paddle* paddle = nullptr;
+const int MAX_BRICKS = 100;
+const int LEVELS = 5;
 
-void keyboard(unsigned char key, int x, int y) {
-    switch (key) {
-        case 'a':
-            paddle->move(-1);
-            break;
-        case 'd':
-            paddle->move(1);
-            break;
+class Game {
+public:
+    Game() {
+        paddle = new Paddle(yellow, 200, 50, 100, 20, 20);
+        glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+        glutInitWindowSize(600, 600);
+        glutCreateWindow("Brick Breaker Game");
+        glClearColor(0.0, 0.0, 0.0, 1.0);
+        gluOrtho2D(0, 600, 0, 600);
+        glutKeyboardFunc(keyboard);
+
+        // Create array of bricks
+        brickCount = 0;
+
+        // Add bricks to array
+        bricks[brickCount++] = new GreenBrick(100, 500, 50, 20);
+        bricks[brickCount++] = new PinkBrick(200, 500, 50, 20);
+        bricks[brickCount++] = new BlueBrick(300, 500, 50, 20);
+        bricks[brickCount++] = new RedBrick(400, 500, 50, 20);
+        bricks[brickCount++] = new YellowBrick(500, 500, 50, 20);
+
+        glutTimerFunc(0, update, 0);
+
+        score = 0;
     }
-    glutPostRedisplay();
-}
 
-void update(vector<Bricks*>& bricks, int value) {
-    
-    static Ball ball(250, 100, 4.0, 2, 2, 10, white);
-    ball.move();
+    void startGame() {
+        glutMainLoop();
+    }
 
-    for (auto it = bricks.begin(); it != bricks.end(); ) {
-        (*it)->ballCollision(ball);
-        if ((*it)->getLives() == 0) {
-            it = bricks.erase(it);
-        } else {
-            ++it;
+    static Game* instance;
+
+private:
+    Paddle* paddle;
+    Blocks* bricks[MAX_BRICKS];
+    int brickCount;
+    int score;
+
+    static void keyboard(unsigned char key, int x, int y) {
+        if (!instance) return;
+
+        switch (key) {
+            case 'a':
+                instance->paddle->move(-1);
+                break;
+            case 'd':
+                instance->paddle->move(1);
+                break;
         }
+        glutPostRedisplay();
     }
 
-    for( auto& brick : bricks ) {
-        brick->draw();
+    static void update(int timerId) {
+        if (!instance) return;
+
+        static Ball ball(250, 100, 4.0, 2, 2, 10, white);
+        ball.move();
+
+        for (int i = 0; i < instance->brickCount; i++) {
+            instance->bricks[i]->ballCollision(ball);
+            if (dynamic_cast<Bricks*>(instance->bricks[i])->getLives() == 0) {
+                delete instance->bricks[i];
+                for (int j = i; j < instance->brickCount - 1; j++) {
+                    instance->bricks[j] = instance->bricks[j + 1];
+                }
+                instance->brickCount--;
+                i--;
+            }
+        }
+
+
+        glClear(GL_COLOR_BUFFER_BIT);
+        for (int i = 0; i < instance->brickCount; i++) {
+            instance->bricks[i]->draw();
+        }
+        instance->paddle->draw();
+        instance->paddle->ballCollision(ball);
+
+        ball.draw();
+        float ballX = ball.getX();
+        float ballY = ball.getY();
+        float ballRadius = ball.getRadius();
+        float windowWidth = 600;
+        float windowHeight = 600;
+
+        if (ballX - ballRadius <= 0 || ballX + ballRadius >= windowWidth) {
+            ball.setHorizontalVelocity(-ball.getHorizontalVelocity());
+        }
+
+        if (ballY - ballRadius <= 0 || ballY + ballRadius >= windowHeight) {
+            ball.setVerticalVelocity(-ball.getVerticalVelocity());
+        }
+
+        glFlush();
+        glutPostRedisplay();
+        glutTimerFunc(16, update, 0);
     }
+};
 
-
-    glClear(GL_COLOR_BUFFER_BIT);
-    
-    
-    paddle->draw();
-    paddle->ballCollision(ball);
-
-
-
-    ball.draw();
-    float ballX = ball.getX();
-    float ballY = ball.getY( );
-    float ballRadius = ball.getRadius();
-    float windowWidth = 600;
-    float windowHeight = 600;
-    
-    if (ballX - ballRadius <= 0 || ballX + ballRadius >= windowWidth) {
-        ball.setHorizontalVelocity(-ball.getHorizontalVelocity());
-    }
-
-    if (ballY - ballRadius <= 0 || ballY + ballRadius >= windowHeight) {
-        ball.setVerticalVelocity(-ball.getVerticalVelocity());
-    }
-    
-    glFlush();
-
-    glutPostRedisplay();
-    glutTimerFunc(16, update, 0);
-}
+Game* Game::instance = nullptr;
 
 int main(int argc, char** argv) {
-    paddle = new Paddle(yellow, 200, 50, 100, 20, 20);
     glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
-    glutInitWindowSize(600, 600);
-    glutCreateWindow("Brick Breaker Game");
-    glClearColor(0.0, 0.0, 0.0, 1.0);
-    gluOrtho2D(0, 600, 0, 600);
-    glutKeyboardFunc(keyboard);
-    glutTimerFunc(0, update, 0);
-    
-    glutMainLoop();
+    Game game;
+    Game::instance = &game;
+    game.startGame();
     return 0;
 }
