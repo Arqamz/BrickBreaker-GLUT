@@ -117,7 +117,7 @@ public:
 
     virtual void draw() = 0;
 
-    virtual void ballCollision(Ball& ball) = 0;
+    virtual bool ballCollision(Ball& ball) = 0;
 
 protected:
     float* color;
@@ -139,14 +139,16 @@ public:
         DrawRectangle(x, y, width, height, color);
     }
 
-    void ballCollision(Ball& ball) override {
+    bool ballCollision(Ball& ball) override {
         if (ball.getX() + ball.getRadius() >= x && ball.getX() - ball.getRadius() <= x + width &&
             ball.getY() + ball.getRadius() >= y && ball.getY() - ball.getRadius() <= y + height) {
             ball.setVerticalVelocity(-ball.getVerticalVelocity());
             cout << lives << endl;
             ball.setColor(this->getColor());
             lives--;
+            return true;
         }
+        return false;
     }
 
 
@@ -202,12 +204,14 @@ public:
         DrawRoundRect(x, y, width, height, color);
     }
 
-    void ballCollision(Ball& ball) override {
+    bool ballCollision(Ball& ball) override {
         if (ball.getX() + ball.getRadius() >= x && ball.getX() - ball.getRadius() <= x + width &&
             ball.getY() + ball.getRadius() >= y && ball.getY() - ball.getRadius() <= y + height) {
             ball.setVerticalVelocity(-ball.getVerticalVelocity());
             this->setColor(ball.getColor());
+            return true;
         }
+        return false;
     }
 
 
@@ -215,32 +219,86 @@ private:
     int speed;
 };
 
+class Droppables {
+protected:
+    int x;
+    int y;
+    bool active;
 
+public:
+    Droppables(int startX, int startY) : x(startX), y(startY), active(false) {}
 
+    void move() {
+        y += 10;
+    }
 
+    int getX() const {
+        return x;
+    }
+    void setX(int newX) {
+        x = newX;
+    }
+    int getY() const {
+        return y;
+    }
+    void setY(int newY) {
+        y = newY;
+    }
+    bool isActive() const {
+        return active;
+    }
+    void setActive(bool newActive) {
+        active = newActive;
+    }
 
+    virtual void draw() = 0;
+};
 
+class Droppable1 : public Droppables {
+public:
+    Droppable1(int startX, int startY) : Droppables(startX, startY) {}
+    void draw() override {
+        DrawCircle(x, y, 8, green);
+    }
+};
 
+class Droppable2 : public Droppables {
+public:
+    Droppable2(int startX, int startY) : Droppables(startX, startY) {}
+    void draw() override {
+        DrawSquare(x, y, 5, pink);
+    }
+};
 
+class Droppable3 : public Droppables {
+public:
+    Droppable3(int startX, int startY) : Droppables(startX, startY) {}
+    void draw() override {
+        float x1 = x - 10;
+        float y1 = y - 10;
+        float x2 = x + 10;
+        float y2 = y - 10;
+        float x3 = x;
+        float y3 = y + 10;
+        DrawTriangle(x1, y1, x2, y2, x3, y3, blue);
+    }
+};
 
+class Droppable4 : public Droppables {
+public:
+    Droppable4(int startX, int startY) : Droppables(startX, startY) {}
+    void draw() override {
+        DrawRectangle(x, y, 5, 8, red);
+    }
+};
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+class Droppable5 : public Droppables {
+public:
+    Droppable5(int startX, int startY) : Droppables(startX, startY) {}
+    void draw() override {
+        DrawRoundRect(x, y, 5, 8, yellow, 8);
+    }
+};
 
 class Game {
 public:
@@ -249,17 +307,7 @@ public:
 
         paddle = new Paddle(yellow, 200, 50, 100, 10, 40);
 
-        for (int i = 0; i < ballCount; i++) {
-            cout << "Ball " << i+1 << " information:" << endl;
-            cout << "X: " << balls[i].getX() << endl;
-            cout << "Y: " << balls[i].getY() << endl;
-            cout << "Vertical Velocity: " << balls[i].getVerticalVelocity() << endl;
-            cout << "Horizontal Velocity: " << balls[i].getHorizontalVelocity() << endl;
-            cout << "Speed: " << balls[i].getSpeed() << endl;
-            cout << "Color: (" << balls[i].getColor()[0] << ", " << balls[i].getColor()[1] << ", " << balls[i].getColor()[2] << ")" << endl;
-            cout << "Radius: " << balls[i].getRadius() << endl;
-            cout << endl;
-        }
+        initializeDroppables();
 
         glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
         glutInitWindowSize(600, 600);
@@ -277,8 +325,8 @@ public:
         int startX = 100;
         int startY = 500;
 
-        for (int row = 0; row < 2; row++) {
-            for (int col = 0; col < 4; col++) {
+        for (int row = 0; row < 5; row++) {
+            for (int col = 0; col < 3; col++) {
                 brickCount++;
                 cout << "Brick count: " << brickCount << endl;
                 int randomColor = rand() % 5 + 1;
@@ -321,7 +369,8 @@ public:
 
 private:
     Paddle* paddle;
-    Blocks* bricks[10];
+    Blocks* bricks[24];
+    Droppables* droppables[24];
     int brickCount;
     int score;
     int lives;
@@ -379,6 +428,32 @@ private:
     //     addBall(newBall2);
     // }
 
+    void initializeDroppables() {
+        for (int i = 0; i < 24; ++i) {
+            int startX = rand() % 600;
+            int startY = rand() % 300 + 300;
+            int droppableType = rand() % 5 + 1;
+
+            switch (droppableType) {
+                case 1:
+                    droppables[i] = new Droppable1(startX, startY);
+                    break;
+                case 2:
+                    droppables[i] = new Droppable2(startX, startY);
+                    break;
+                case 3:
+                    droppables[i] = new Droppable3(startX, startY);
+                    break;
+                case 4:
+                    droppables[i] = new Droppable4(startX, startY);
+                    break;
+                case 5:
+                    droppables[i] = new Droppable5(startX, startY);
+                    break;
+            }
+        }
+    }
+
     static void keyboard(unsigned char key, int x, int y) {
         if (!instance) return;
 
@@ -404,8 +479,20 @@ private:
         cout << "Check collision with Ball\n";
         for (int i = 0; i < instance->brickCount; i++) {
             for (int j = 0; j < instance->ballCount; j++) {
+                cout << "DID THIS HAPPEN??\n";
                 if (instance->bricks[i]) {
-                    instance->bricks[i]->ballCollision(instance->balls[j]);
+                    if(instance->bricks[i]->ballCollision(instance->balls[j])){
+                        instance->score++;
+                        cout << "Score: " << instance->score << endl;
+
+                        int randomNumber = rand() % 3 + 1;
+
+                        if (randomNumber == 1) {
+                            instance->droppables[i]->setX(instance->bricks[i]->getX());
+                            instance->droppables[i]->setY(instance->bricks[i]->getY());
+                            instance->droppables[i]->setActive(true);
+                        }
+                    }
                 }
             }
             if (instance->bricks[i] && dynamic_cast<Bricks*>(instance->bricks[i])->getLives() == 0) {
@@ -424,6 +511,21 @@ private:
             if (instance->bricks[i]) {
                 instance->bricks[i]->draw();
                 cout << "Brick " << i+1 << " drawn." << endl;
+            }
+        }
+
+        cout << "DID THIS HAPPEN\n";
+
+        if (instance->droppables == nullptr){
+          
+            cout << "NOT INITIALISED\n";
+        }
+
+        for (int i = 0; i < 24; i++) {
+            if (instance->droppables[i]->isActive()) {
+                instance->droppables[i]->move();
+                instance->droppables[i]->draw();
+                cout << "Droppable " << i+1 << " moved and drawn." << endl;
             }
         }
 
@@ -448,7 +550,6 @@ private:
                 }
             }
         }
-
 
         for(int i=0;i<instance->lives;i++){
             DrawCircle(20 + i*20, 580, 5, white);

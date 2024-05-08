@@ -13,12 +13,11 @@ public:
     virtual void draw() = 0;
 };
 
-
 class Droppable1 : public Droppables {
 public:
     Droppable1(int startX, int startY) : Droppables(startX, startY) {}
     void draw() override {
-        // Code for drawing Droppable1
+        DrawCircle(x, y, radius, color);
     }
 };
 
@@ -26,7 +25,7 @@ class Droppable2 : public Droppables {
 public:
     Droppable2(int startX, int startY) : Droppables(startX, startY) {}
     void draw() override {
-        // Code for drawing Droppable2
+        DrawSquare(x, y, size, color);
     }
 };
 
@@ -34,7 +33,7 @@ class Droppable3 : public Droppables {
 public:
     Droppable3(int startX, int startY) : Droppables(startX, startY) {}
     void draw() override {
-        // Code for drawing Droppable3
+        DrawTriangle(x1, y1, x2, y2, x3, y3, color);
     }
 };
 
@@ -42,7 +41,7 @@ class Droppable4 : public Droppables {
 public:
     Droppable4(int startX, int startY) : Droppables(startX, startY) {}
     void draw() override {
-        // Code for drawing Droppable4
+        DrawRectangle(x, y, width, height, color);
     }
 };
 
@@ -50,6 +49,6 @@ class Droppable5 : public Droppables {
 public:
     Droppable5(int startX, int startY) : Droppables(startX, startY) {}
     void draw() override {
-        // Code for drawing Droppable5
+        DrawRoundRect(x, y, width, height, color, radius);
     }
 };
