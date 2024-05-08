@@ -2,22 +2,33 @@
 #include <cstdlib>
 #include <ctime>
 #include <vector>
+#include <iostream>
 
 #include "util.h"
 #include "util.cpp"
 
-
+using namespace std;
 
 class Ball {
 private:
     float x, y;
-    float speed; // Magnitude of velocity vector
+    float speed;
     float horizontalVelocity;
     float verticalVelocity;
     float radius;
     float* color;
 
 public:
+    Ball() {
+        x = 300;
+        y = 100;
+        speed = 5;
+        horizontalVelocity = 1;
+        verticalVelocity = 1;
+        radius = 10;
+        color = white;
+    }
+
     Ball(float startX, float startY, float startSpeed, float startDX, float startDY, float ballRadius, float* ballColor) {
         x = startX;
         y = startY;
@@ -87,7 +98,6 @@ public:
         return radius;
     }
 };
-
 class Blocks {
 public:
     Blocks(float* color, int x, int y, int width, int height)
@@ -182,6 +192,8 @@ public:
     int getSpeed() const { return speed; }
     void setSpeed(int newSpeed) { speed = newSpeed; }
 
+    
+
     void move(int dx) {
         x += dx * speed;
     }
@@ -191,13 +203,9 @@ public:
     }
 
     void ballCollision(Ball& ball) override {
-        // Check if the ball collides with the brick
         if (ball.getX() + ball.getRadius() >= x && ball.getX() - ball.getRadius() <= x + width &&
             ball.getY() + ball.getRadius() >= y && ball.getY() - ball.getRadius() <= y + height) {
-            // Reverse the vertical velocity of the ball
             ball.setVerticalVelocity(-ball.getVerticalVelocity());
-            
-            // Change the color of the paddle to the color of the ball
             this->setColor(ball.getColor());
         }
     }
@@ -209,13 +217,50 @@ private:
 
 
 
-const int MAX_BRICKS = 100;
-const int LEVELS = 5;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class Game {
 public:
-    Game() {
-        paddle = new Paddle(yellow, 200, 50, 100, 20, 20);
+    Game() : ballCount(1), balls(new Ball[10]) {
+        cout << "Game constructor called." << endl;
+
+        paddle = new Paddle(yellow, 200, 50, 100, 10, 40);
+
+        for (int i = 0; i < ballCount; i++) {
+            cout << "Ball " << i+1 << " information:" << endl;
+            cout << "X: " << balls[i].getX() << endl;
+            cout << "Y: " << balls[i].getY() << endl;
+            cout << "Vertical Velocity: " << balls[i].getVerticalVelocity() << endl;
+            cout << "Horizontal Velocity: " << balls[i].getHorizontalVelocity() << endl;
+            cout << "Speed: " << balls[i].getSpeed() << endl;
+            cout << "Color: (" << balls[i].getColor()[0] << ", " << balls[i].getColor()[1] << ", " << balls[i].getColor()[2] << ")" << endl;
+            cout << "Radius: " << balls[i].getRadius() << endl;
+            cout << endl;
+        }
+
         glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
         glutInitWindowSize(600, 600);
         glutCreateWindow("Brick Breaker Game");
@@ -223,15 +268,44 @@ public:
         gluOrtho2D(0, 600, 0, 600);
         glutKeyboardFunc(keyboard);
 
-        // Create array of bricks
         brickCount = 0;
+        lives = 3;
+        level = 1;
 
-        // Add bricks to array
-        bricks[brickCount++] = new GreenBrick(100, 500, 50, 20);
-        bricks[brickCount++] = new PinkBrick(200, 500, 50, 20);
-        bricks[brickCount++] = new BlueBrick(300, 500, 50, 20);
-        bricks[brickCount++] = new RedBrick(400, 500, 50, 20);
-        bricks[brickCount++] = new YellowBrick(500, 500, 50, 20);
+        int brickWidth = 50;
+        int brickHeight = 20;
+        int startX = 100;
+        int startY = 500;
+
+        for (int row = 0; row < 2; row++) {
+            for (int col = 0; col < 4; col++) {
+                brickCount++;
+                cout << "Brick count: " << brickCount << endl;
+                int randomColor = rand() % 5 + 1;
+                switch (randomColor) {
+                    case 1:
+                        cout << "Green Brick created." << endl;
+                        bricks[brickCount] = new GreenBrick(startX + col * brickWidth, startY - row * brickHeight, brickWidth, brickHeight);
+                        break;
+                    case 2:
+                        cout << "Pink Brick created." << endl;
+                        bricks[brickCount] = new PinkBrick(startX + col * brickWidth, startY - row * brickHeight, brickWidth, brickHeight);
+                        break;
+                    case 3:
+                        cout << "Blue Brick created." << endl;
+                        bricks[brickCount] = new BlueBrick(startX + col * brickWidth, startY - row * brickHeight, brickWidth, brickHeight);
+                        break;
+                    case 4:
+                        cout << "Red Brick created." << endl;
+                        bricks[brickCount] = new RedBrick(startX + col * brickWidth, startY - row * brickHeight, brickWidth, brickHeight);
+                        break;
+                    case 5:
+                        cout << "Yellow Brick created." << endl;
+                        bricks[brickCount] = new YellowBrick(startX + col * brickWidth, startY - row * brickHeight, brickWidth, brickHeight);
+                        break;
+                }
+            }
+        }
 
         glutTimerFunc(0, update, 0);
 
@@ -239,6 +313,7 @@ public:
     }
 
     void startGame() {
+        cout << "Game started." << endl;
         glutMainLoop();
     }
 
@@ -246,9 +321,63 @@ public:
 
 private:
     Paddle* paddle;
-    Blocks* bricks[MAX_BRICKS];
+    Blocks* bricks[10];
     int brickCount;
     int score;
+    int lives;
+    int level;
+    Ball* balls;
+    int ballCount; 
+
+    // void addBall(Ball& newBall) {
+    //     cout << "Adding ball." << endl;
+    //     Ball* temp = new Ball[ballCount + 1];
+    //     for (int i = 0; i < ballCount; ++i) {
+    //         temp[i] = balls[i];
+    //     }
+    //     temp[ballCount] = newBall;
+    //     delete[] balls;
+    //     balls = temp;
+    //     ++ballCount;
+    // }
+
+    // void increasePaddleSize() {
+    //     cout << "Increasing paddle size." << endl;
+    //     int currentWidth = instance->paddle->getWidth();
+    //     instance->paddle->setWidth(currentWidth + 20);
+    // }
+
+    // void reducePaddleSize() {
+    //     cout << "Reducing paddle size." << endl;
+    //     int currentWidth = instance->paddle->getWidth();
+    //     if (currentWidth > 20) {
+    //         instance->paddle->setWidth(currentWidth - 20);
+    //     }
+    // }
+
+    // void slowDownBallSpeed() {
+    //     cout << "Slowing down ball speed." << endl;
+    //     for (int i = 0; i < ballCount; i++) {
+    //         float currentSpeed = balls[i].getSpeed();
+    //         balls[i].setSpeed(currentSpeed / 2);
+    //     }
+    // }
+
+    // void increaseBallSpeed() {
+    //     cout << "Increasing ball speed." << endl;
+    //     for (int i = 0; i < ballCount; i++) {
+    //         float currentSpeed = balls[i].getSpeed();
+    //         balls[i].setSpeed(currentSpeed * 2);
+    //     }
+    // }
+
+    // void addExtraBalls() {
+    //     cout << "Adding extra balls." << endl;
+    //     Ball newBall1 = balls[0];
+    //     Ball newBall2 = balls[0];
+    //     addBall(newBall1);
+    //     addBall(newBall2);
+    // }
 
     static void keyboard(unsigned char key, int x, int y) {
         if (!instance) return;
@@ -267,42 +396,94 @@ private:
     static void update(int timerId) {
         if (!instance) return;
 
-        static Ball ball(250, 100, 4.0, 2, 2, 10, white);
-        ball.move();
+        for (int i = 0; i < instance->ballCount; i++) {
+            instance->balls[i].move();
+            cout << "Ball " << i+1 << " moved." << endl;
+        }
 
+        cout << "Check collision with Ball\n";
         for (int i = 0; i < instance->brickCount; i++) {
-            instance->bricks[i]->ballCollision(ball);
-            if (dynamic_cast<Bricks*>(instance->bricks[i])->getLives() == 0) {
+            for (int j = 0; j < instance->ballCount; j++) {
+                if (instance->bricks[i]) {
+                    instance->bricks[i]->ballCollision(instance->balls[j]);
+                }
+            }
+            if (instance->bricks[i] && dynamic_cast<Bricks*>(instance->bricks[i])->getLives() == 0) {
                 delete instance->bricks[i];
                 for (int j = i; j < instance->brickCount - 1; j++) {
                     instance->bricks[j] = instance->bricks[j + 1];
                 }
                 instance->brickCount--;
                 i--;
+                cout << "Brick " << i+1 << " destroyed." << endl;
+            }
+        }
+
+        glClear(GL_COLOR_BUFFER_BIT);
+        for (int i = 0; i < instance->brickCount; i++) {
+            if (instance->bricks[i]) {
+                instance->bricks[i]->draw();
+                cout << "Brick " << i+1 << " drawn." << endl;
+            }
+        }
+
+        cout << "Check paddle collision with balls" << endl;
+        if (instance == nullptr) {
+            cout << "Error: Game instance is null." << endl;
+        } else {
+            if (instance->paddle == nullptr) {
+                cout << "Error: Paddle instance is null." << endl;
+            } else {
+                for (int i = 0; i < instance->ballCount; i++) {
+                    if (i >= 10) {
+                        cout << "Error: Index " << i << " is out of bounds for balls array." << endl;
+                        break;
+                    }
+                    if (instance->balls[i].getSpeed()) {
+                        instance->paddle->ballCollision(instance->balls[i]);
+                        cout << "Ball " << i+1 << " collided with paddle." << endl;
+                    } else {
+                        cout << "Error: Ball " << i+1 << " is not valid." << endl;
+                    }
+                }
             }
         }
 
 
-        glClear(GL_COLOR_BUFFER_BIT);
-        for (int i = 0; i < instance->brickCount; i++) {
-            instance->bricks[i]->draw();
+        for(int i=0;i<instance->lives;i++){
+            DrawCircle(20 + i*20, 580, 5, white);
+            cout << "Life " << i+1 << " drawn." << endl;
         }
+
         instance->paddle->draw();
-        instance->paddle->ballCollision(ball);
-
-        ball.draw();
-        float ballX = ball.getX();
-        float ballY = ball.getY();
-        float ballRadius = ball.getRadius();
-        float windowWidth = 600;
-        float windowHeight = 600;
-
-        if (ballX - ballRadius <= 0 || ballX + ballRadius >= windowWidth) {
-            ball.setHorizontalVelocity(-ball.getHorizontalVelocity());
+        cout << "Paddle drawn." << endl;
+        for (int i = 0; i < instance->ballCount; i++) {
+            instance->balls[i].draw(); // Draw all balls
+            cout << "Ball " << i+1 << " drawn." << endl;
         }
 
-        if (ballY - ballRadius <= 0 || ballY + ballRadius >= windowHeight) {
-            ball.setVerticalVelocity(-ball.getVerticalVelocity());
+        float ballX, ballY, ballRadius, windowWidth, windowHeight;
+        for (int i = 0; i < instance->ballCount; i++) {
+            ballX = instance->balls[i].getX();
+            ballY = instance->balls[i].getY();
+            ballRadius = instance->balls[i].getRadius();
+            windowWidth = 600;
+            windowHeight = 600;
+
+            if (ballX - ballRadius <= 0 || ballX + ballRadius >= windowWidth) {
+                instance->balls[i].setHorizontalVelocity(-instance->balls[i].getHorizontalVelocity());
+                cout << "Ball " << i+1 << " changed horizontal velocity." << endl;
+            }
+
+            if (ballY - ballRadius <= 0 || ballY + ballRadius >= windowHeight) {
+                instance->balls[i].setVerticalVelocity(-instance->balls[i].getVerticalVelocity());
+                cout << "Ball " << i+1 << " changed vertical velocity." << endl;
+            }
+
+            if (ballY - ballRadius <= 0) {
+                instance->lives--;
+                cout << "Life lost." << endl;
+            }
         }
 
         glFlush();
@@ -312,7 +493,6 @@ private:
 };
 
 Game* Game::instance = nullptr;
-
 int main(int argc, char** argv) {
     glutInit(&argc, argv);
     Game game;
